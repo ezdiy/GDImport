@@ -6,7 +6,6 @@ using System.IO;
 using SlimDX;
 using SlimDX.DXGI;
 using SlimDX.Direct3D11;
-using SlimDX.Direct3D9;
 
 namespace SB3Utility
 {

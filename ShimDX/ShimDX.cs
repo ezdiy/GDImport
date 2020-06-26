@@ -24,12 +24,21 @@ namespace SlimDX
         public class Dummy
         {
         }
+
+        public enum Format
+        {
+            R8G8B8A8_UNorm = 28,
+            BC7_UNorm = 98,
+            BC7_UNorm_SRGB = 99,
+        }
     }
 
     namespace Direct3D9
     {
-        public class Dummy
+        public enum Format
         {
+            A32B32G32R32F = 116,
+            A16B16G16R16F = 113,
         }
     }
 
@@ -38,10 +47,7 @@ namespace SlimDX
         Bmp,
         Tga,
     }
-
-    public enum Format
-    {
-    }
+    
 
     public enum ResourceType
     {
