@@ -36,6 +36,16 @@ namespace SlimDX
 		#endregion
 
 		#region Public Fields
+		
+		public Vector3 Minimum
+		{
+			get => Min;
+		}
+
+		public Vector3 Maximum
+		{
+			get => Max;
+		}
 
 		public Vector3 Min;
 

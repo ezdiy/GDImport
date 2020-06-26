@@ -1851,6 +1851,11 @@ namespace SlimDX
 			return matrix;
 		}
 
+		public void Invert()
+		{
+			Invert(this);
+		}
+
 		/// <summary>
 		/// Creates a new <see cref="Matrix"/> which contains inversion of the specified matrix.
 		/// </summary>

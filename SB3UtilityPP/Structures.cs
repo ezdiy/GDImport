@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using SlimDX;
-using System.Numerics;
-using Matrix = System.Numerics.Matrix4x4;
 
 namespace SB3Utility
 {

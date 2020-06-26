@@ -200,6 +200,11 @@ namespace SlimDX
 		/// </summary>
 		public float Z;
 
+		public float this[int id]
+		{
+			get => id>0 ? (id == 2 ? Z : Y) : X;
+		}
+
 		#endregion
 
 		#region Public Constructors
@@ -743,6 +748,9 @@ namespace SlimDX
 			);
 		}
 
+		public static Vector3 Maximize(Vector3 value1, Vector3 value2) => Max(value1, value2);
+		public static Vector3 Minimize(Vector3 value1, Vector3 value2) => Min(value1, value2);
+
 		/// <summary>
 		/// Creates a new <see cref="Vector3"/> that contains a maximal values from the two vectors.
 		/// </summary>
@@ -1014,6 +1022,8 @@ namespace SlimDX
 			Transform(ref position, ref matrix, out position);
 			return position;
 		}
+
+		public static Vector3 TransformCoordinate(Vector3 position, Matrix matrix) => Transform(position, matrix);
 
 		/// <summary>
 		/// Creates a new <see cref="Vector3"/> that contains a transformation of 3d-vector by the specified <see cref="Matrix"/>.
