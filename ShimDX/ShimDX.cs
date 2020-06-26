@@ -36,48 +36,28 @@ namespace SlimDX
     public enum ImageFileFormat
     {
         Bmp,
-        Emf,
-        Exif,
-        Gif,
-        Icon,
-        Jpeg,
-        Png,
-        Tiff,
-        Wmf,
-        Unknown
+        Tga,
     }
-    
+
+    public enum Format
+    {
+    }
+
+    public enum ResourceType
+    {
+    }
 
     public class ImageInformation
     {
         public int Width, Height, Depth;
         public ImageFileFormat ImageFileFormat;
-
-        public static ImageInformation FromStream(Stream data)
-        {
-            var formats = new ImageFormat[]
-            {
-                ImageFormat.Bmp, ImageFormat.Emf, ImageFormat.Exif, ImageFormat.Gif, ImageFormat.Icon,
-                ImageFormat.Jpeg, ImageFormat.Png, ImageFormat.Tiff, ImageFormat.Wmf,
-            };
-            var img = Image.FromStream(data);
-            var res = new ImageInformation {Width = img.Width, Height = img.Height};
-            foreach (var f in formats)
-            {
-                res.ImageFileFormat++;
-                if (f.Equals(img.RawFormat))
-                {
-                    return res;
-                }
-            }
-
-            res.ImageFileFormat = ImageFileFormat.Unknown;
-            return res;
-        }
-
+        public Format Format;
+        public int MipLevels;
+        public ResourceType ResourceType;
+        
         public static ImageInformation FromMemory(byte[] data)
         {
-            return FromStream(new MemoryStream(data));
+            throw new System.NotImplementedException();
         }
     }
 }

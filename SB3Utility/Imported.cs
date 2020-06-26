@@ -2,10 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-
-using System.Numerics;
-using Matrix = System.Numerics.Matrix4x4;
-using Color4 = System.Numerics.Vector4;
+using SlimDX;
 
 namespace SB3Utility
 {
