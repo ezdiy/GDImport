@@ -5,6 +5,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\FmodShim\FmodShim.csproj" />
       <ProjectReference Include="..\ShimDX\ShimDX.csproj" />
     </ItemGroup>
 

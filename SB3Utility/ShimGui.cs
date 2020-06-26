@@ -6,7 +6,7 @@ namespace SB3Utility
 {
     public class Renderer
     {
-        public GraphicsDevice Device;
+        public SlimDX.Direct3D11.Device Device;
     }
     public static class Gui
     {
