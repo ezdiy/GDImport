@@ -5,4 +5,16 @@
         <TargetFramework>netcoreapp3.1</TargetFramework>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\GLTFSchema\GLTFSchema.csproj" />
+      <ProjectReference Include="..\SB3UtilityPP\SB3UtilityPP.csproj" />
+      <ProjectReference Include="..\SB3Utility\SB3Utility.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Dahomey.Json" Version="1.6.2" />
+      <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+      <PackageReference Include="Pfim" Version="0.9.1" />
+    </ItemGroup>
+
 </Project>

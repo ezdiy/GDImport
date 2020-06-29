@@ -200,6 +200,11 @@ namespace SlimDX
 		/// </summary>
 		public float Z;
 
+		public float[] ToArray()
+		{
+			return new float[] {X,Y,Z};
+		}
+
 		public float this[int id]
 		{
 			get => id>0 ? (id == 2 ? Z : Y) : X;

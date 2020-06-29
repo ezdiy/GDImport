@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShimDX", "ShimDX\ShimDX.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FmodShim", "FmodShim\FmodShim.csproj", "{A10E3EE5-B66D-410D-A657-48092BFF91CB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLTFSchema", "GLTFSchema\GLTFSchema.csproj", "{47AA00B7-627A-4393-B35F-5C05056E5DAC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{A10E3EE5-B66D-410D-A657-48092BFF91CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A10E3EE5-B66D-410D-A657-48092BFF91CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A10E3EE5-B66D-410D-A657-48092BFF91CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47AA00B7-627A-4393-B35F-5C05056E5DAC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47AA00B7-627A-4393-B35F-5C05056E5DAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47AA00B7-627A-4393-B35F-5C05056E5DAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47AA00B7-627A-4393-B35F-5C05056E5DAC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

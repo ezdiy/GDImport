@@ -25,6 +25,25 @@ namespace SlimDX
 	public struct Matrix : IEquatable<Matrix>
 	{
 		#region Public Properties
+		
+		public float[] RowMajor()
+		{
+			var ret = new float[16];
+			for (var i = 0; i < 16; i++)
+			{
+				ret[i] = this[0, i];
+			}
+			return ret;
+		}
+		public float[] ColumnMajor()
+		{
+			var ret = new float[16];
+			for (var i = 0; i < 16; i++)
+			{
+				ret[i] = this[i%4, i/4];
+			}
+			return ret;
+		}
 
 		public float this[int row, int column]
 		{

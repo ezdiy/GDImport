@@ -11,7 +11,13 @@ namespace SB3Utility
 {
 	public static partial class Utility
 	{
-		public static Encoding EncodingShiftJIS = Encoding.GetEncoding("Shift-JIS");
+		static Utility()
+		{
+			Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+			EncodingShiftJIS = Encoding.GetEncoding("Shift-JIS");
+		}
+
+		public static Encoding EncodingShiftJIS;
 		public static CultureInfo CultureUS = new CultureInfo("en-US");
 		public const uint BufSize = 0x400000;
 

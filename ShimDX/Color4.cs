@@ -14,5 +14,15 @@ namespace SlimDX
             Blue = B;
             Alpha = A;
         }
-    }
+
+        public float[] ToArray()
+        {
+            return new float[]{Red,Green,Blue,Alpha};
+        }
+
+        public float Luminance()
+        {
+            return (float)(Red * 0.2125 + Green * 0.7154 + Blue * 0.0721);
+        }
+     }
 }
