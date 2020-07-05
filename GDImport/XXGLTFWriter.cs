@@ -21,9 +21,10 @@ namespace GDImport
             public int index;
             public string hash;
         }
-        BinaryWriter vertexOutput, indicesOutput;
-        BufferWriter indicesBuffer, vertexBuffer;
-        BufferWriter.View indicesView, vertexView;
+
+        BinaryWriter vertexOutput, indicesOutput, ibmOutput;
+        BufferWriter indicesBuffer, vertexBuffer, ibmBufer;
+        BufferWriter.View indicesView, vertexView, ibmView;
         private string dstDir, dstName;
         private xxParser xxParser;
         private Dictionary<string, List<matRecord>> mat2idx = new Dictionary<string, List<matRecord>>();
@@ -39,7 +40,7 @@ namespace GDImport
             serializer.Serialize(at, a);
             return at.ToString();
         }
-        
+
         public XXGLTFWriter(string dir, string name)
         {
             asset.version = "2.0";
@@ -48,14 +49,18 @@ namespace GDImport
             dstName = name;
             vertexOutput = new BinaryWriter(File.Create(Path.Join(dstDir, dstName, "vertex.bin")));
             indicesOutput = new BinaryWriter(File.Create(Path.Join(dstDir, dstName, "index.bin")));
+            ibmOutput = new BinaryWriter(File.Create(Path.Join(dstDir, dstName, "ibm.bin")));
 
             vertexBuffer = NewBuffer();
             vertexBuffer.buf.uri = dstName + "/vertex.bin";
             indicesBuffer = NewBuffer();
             indicesBuffer.buf.uri = dstName + "/index.bin";
+            ibmBufer = NewBuffer();
+            ibmBufer.buf.uri = dstName + "/ibm.bin";
 
             vertexView = vertexBuffer.NewView();
             indicesView = indicesBuffer.NewView();
+            ibmView = ibmBufer.NewView();
         }
 
         public string textureName(string name)
@@ -65,6 +70,7 @@ namespace GDImport
                 opaque = "_opaque";
             return dstName + "/" + Path.GetFileNameWithoutExtension(name) + opaque + ".png";
         }
+
         public Nullable<int> getTexture(string name)
         {
             if (name == null || name == "")
@@ -80,9 +86,10 @@ namespace GDImport
                 tex2idx[name] = textures.Count;
                 textures.Add(new Texture()
                 {
-                    source = images.Count-1,
+                    source = images.Count - 1,
                 });
             }
+
             return tex2idx[name];
         }
 
@@ -152,6 +159,7 @@ namespace GDImport
                 // same name, but different version
                 suffix = "_v" + (ml.Count + 1);
             }
+
             var mat = buildMaterial(nm + suffix, om);
             materials ??= new List<Material>();
             ml.Add(new matRecord()
@@ -175,111 +183,187 @@ namespace GDImport
             {
                 if (xxTex.Name.ToLower().EndsWith(".bmp"))
                 {
-                    xxTex.ImageData[0] = (byte)'B';
-                    xxTex.ImageData[1] = (byte)'M';
+                    xxTex.ImageData[0] = (byte) 'B';
+                    xxTex.ImageData[1] = (byte) 'M';
                 }
+
                 //Console.WriteLine("{0}: {1} in {2}", xxTex.Name, xxTex.ImageData.Length, xxParser.Name);
                 SaveTexture(new MemoryStream(xxTex.ImageData), xxTex.Name);
             }
-            // Recursively export the scene
-            saveFrame(xx.Frame, ref sc.nodes);
+
+            // Recursively walk frames and install em into the scene
+            bone2skin = new Dictionary<string, int>();
+            forEachFrame(xx.Frame, Gltf.Unset, (f,parent) =>
+            {
+                int node = makeNode(f);
+                if (parent != Unset)
+                {
+                    nodes[parent].children ??= new List<int>();
+                    nodes[parent].children.Add(node);
+                }
+                else
+                {
+                    sc.nodes.Add(node);
+                }
+                return node;
+            });
             scenes.Add(sc);
         }
         
-        void saveFrame(xxFrame f, ref List<int> children)
+        public Dictionary<string, int> bone2skin;
+
+        int findNode(int n, string name)
         {
-            // One frame is gltf node with a single mesh
-            var node = NewNode(ref children);
-            node.extras = new
+            if (nodes[n].name == name)
+                return n;
+            if (nodes[n].children == null)
+                return -1;
+            foreach (var sub in nodes[n].children)
             {
-                flags = f.Unknown1,
-                flags2 = f.Unknown2,
+                var found = findNode(sub, name);
+                if (found != -1)
+                    return found;
+            }
+
+            return -1;
+        }
+
+        int forEachFrame(xxFrame f, int parent, Func<xxFrame,int,int> cb)
+        {
+            var node = cb(f, parent);
+            foreach (var ff in f)
+                forEachFrame(ff, node, cb);
+            return node;
+        }
+
+        int makeNode(xxFrame f)
+        {
+            nodes ??= new List<Node>();
+            var index = nodes.Count;
+            var node = new Node()
+            {
+                extras = new
+                {
+                    flags = f.Unknown1,
+                    flags2 = f.Unknown2,
+                },
+                name = f.Name,
+                matrix = f.Matrix != Matrix.Identity ? f.Matrix.ColumnMajor() : null,
             };
-            node.name = f.Name;
-            node.matrix = f.Matrix!=Matrix.Identity?f.Matrix.ColumnMajor():null;
-            
+            nodes.Add(node);
+
             var mesh = NewMesh(out int meshidx);
+            node.mesh = meshidx;
             mesh.name = f.Name;
 
-            if (f.Mesh != null)
+            // Frame only, so that is all
+            if (f.Mesh == null)
+                return index;
+
+            // It's a skin, so record all bones we find
+            if (f.Mesh.BoneList.Count > 0)
             {
-                node.mesh = meshidx;
-
-                // Construct a primitive template shared by all primitives (submeshes) under this mesh.
-                var vertexLen = 0;
-                var acc = new int[5];
-                var attrs = new Dictionary<string, int>()
+                skins ??= new List<Skin>();
+                var skin = new Skin()
                 {
-                    ["POSITION"] = acc[0] = vertexView.NewAccessor("VEC3", ComponentType.FLOAT, ref vertexLen),
-                    ["WEIGHTS_0"] = acc[1] = vertexView.NewAccessor("VEC3", ComponentType.FLOAT, ref vertexLen),
-                    ["JOINTS_0"] = acc[2] = vertexView.NewAccessor("VEC4", ComponentType.BYTE, ref vertexLen),
-                    ["NORMAL"] = acc[3] = vertexView.NewAccessor("VEC3", ComponentType.FLOAT, ref vertexLen),
-                    ["TEXCOORD_0"] = acc[4] = vertexView.NewAccessor("VEC2", ComponentType.FLOAT, ref vertexLen),
+                    name = f.Name2,
+                    joints = new List<int>(),
+                    inverseBindMatrices = ibmView.NewAccessor("VEC4", ComponentType.FLOAT, f.Mesh.BoneList.Count),
+                    //skeleton = skeleton,
                 };
-                accessors[acc[0]].min = f.Bounds.Min.ToArray();
-                accessors[acc[0]].max = f.Bounds.Max.ToArray();
-                vertexView.view.byteStride = vertexLen;
-
-                // Instantiate submeshes as primitives
-                foreach (var sub in f.Mesh.SubmeshList)
+                foreach (var joint in f.Mesh.BoneList)
                 {
-                    // The indices always get a new accessor
-                    var iAcc = indicesView.NewAccessor("SCALAR", ComponentType.UNSIGNED_SHORT, sub.FaceList.Count);
-
-                    // Build the primitive
-                    mesh.primitives ??= new List<Primitive>();
-                    mesh.primitives.Add(new Primitive()
+                    /*
+                    int found = findNode(skeleton, joint.Name);
+                    if (found == -1)
                     {
-                        extras = new
-                        {
-                            flags = sub.Unknown1,
-                            flags2 = sub.Unknown2,
-                            flags3 = sub.Unknown3,
-                            flags4 = sub.Unknown4,
-                            flags5 = sub.Unknown5,
-                            flags6 = sub.Unknown6,
-                        },
-                        material = getMaterial(sub.MaterialIndex),
-                        indices = iAcc,
-                        attributes = attrs,
-                    });
-
-                    // Save indices
-                    foreach (var ind in sub.FaceList)
-                    {
-                        indicesOutput.Write(ind.VertexIndices);
-                        accessors[iAcc].count += 3;
-                        indicesBuffer.buf.byteLength += 6;
-                        indicesView.view.byteLength += 6;
+                        throw new Exception("broken skeleton at " + joint.Name);
                     }
+                    skin.joints.Add(found);
+                    */
+                    bone2skin.Add(joint.Name, skins.Count);
+                    ibmOutput.Write(joint.Matrix);
+                    ibmBufer.buf.byteLength += 64;
+                    ibmView.view.byteLength += 64;
+                }
 
-                    // Update vertex attribute accessors with vertex count
-                    for (var i = 0; i < acc.Length; i++)
-                    {
-                        accessors[acc[i]].count += sub.VertexList.Count;
-                    }
+                node.skin = skins.Count;
+                skins.Add(skin);
+            }
 
-                    // And dump vertices
-                    foreach (var vert in sub.VertexList)
+            // No submeshes?
+            if (f.Mesh.SubmeshList.Count == 0)
+                return index;
+
+            // Construct a primitive template shared by all primitives (submeshes) under this mesh.
+            var vertexLen = 0;
+            var acc = new int[5];
+            var attrs = new Dictionary<string, int>()
+            {
+                ["POSITION"] = acc[0] = vertexView.NewAccessor("VEC3", ComponentType.FLOAT, ref vertexLen),
+                ["WEIGHTS_0"] = acc[1] = vertexView.NewAccessor("VEC3", ComponentType.FLOAT, ref vertexLen),
+                ["JOINTS_0"] = acc[2] = vertexView.NewAccessor("VEC4", ComponentType.BYTE, ref vertexLen),
+                ["NORMAL"] = acc[3] = vertexView.NewAccessor("VEC3", ComponentType.FLOAT, ref vertexLen),
+                ["TEXCOORD_0"] = acc[4] = vertexView.NewAccessor("VEC2", ComponentType.FLOAT, ref vertexLen),
+            };
+            accessors[acc[0]].min = f.Bounds.Min.ToArray();
+            accessors[acc[0]].max = f.Bounds.Max.ToArray();
+            vertexView.view.byteStride = vertexLen;
+
+            // Instantiate submeshes as primitives
+            foreach (var sub in f.Mesh.SubmeshList)
+            {
+                // The indices always get a new accessor
+                var iAcc = indicesView.NewAccessor("SCALAR", ComponentType.UNSIGNED_SHORT, sub.FaceList.Count);
+
+                // Build the primitive
+                mesh.primitives ??= new List<Primitive>();
+                mesh.primitives.Add(new Primitive()
+                {
+                    extras = new
                     {
-                        vertexOutput.Write(vert.Position);
-                        vertexOutput.Write(vert.Weights3);
-                        vertexOutput.Write(vert.BoneIndices);
-                        vertexOutput.Write(vert.Normal);
-                        vertexOutput.Write(vert.UV);
-                        vertexBuffer.buf.byteLength += vertexLen;
-                        vertexView.view.byteLength += vertexLen;
-                    }
+                        flags = sub.Unknown1,
+                        flags2 = sub.Unknown2,
+                        flags3 = sub.Unknown3,
+                        flags4 = sub.Unknown4,
+                        flags5 = sub.Unknown5,
+                        flags6 = sub.Unknown6,
+                    },
+                    material = getMaterial(sub.MaterialIndex),
+                    indices = iAcc,
+                    attributes = attrs,
+                });
+
+                // Save indices
+                foreach (var ind in sub.FaceList)
+                {
+                    indicesOutput.Write(ind.VertexIndices);
+                    accessors[iAcc].count += 3;
+                    indicesBuffer.buf.byteLength += 6;
+                    indicesView.view.byteLength += 6;
+                }
+
+                // Update vertex attribute accessors with vertex count
+                for (var i = 0; i < acc.Length; i++)
+                {
+                    accessors[acc[i]].count += sub.VertexList.Count;
+                }
+
+                // And dump vertices
+                foreach (var vert in sub.VertexList)
+                {
+                    vertexOutput.Write(vert.Position);
+                    vertexOutput.Write(vert.Weights3);
+                    vertexOutput.Write(vert.BoneIndices);
+                    vertexOutput.Write(vert.Normal);
+                    vertexOutput.Write(vert.UV);
+                    vertexBuffer.buf.byteLength += vertexLen;
+                    vertexView.view.byteLength += vertexLen;
                 }
             }
-
-            // Recurse into children
-            foreach (var child in f)
-            {
-                saveFrame(child, ref node.children);
-            }
+            return index;
         }
-        
+
         // Serialize the output json.
         public void Save()
         {
@@ -292,6 +376,7 @@ namespace GDImport
             outJs.Close();
             vertexOutput.Close();
             indicesOutput.Close();
+            ibmOutput.Close();
         }
 
         public void SaveTexture(Stream data, string name)

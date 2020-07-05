@@ -33,7 +33,7 @@ namespace GDImport
                 {
                     continue;
                 }
-                //Console.WriteLine(ppName);
+                Console.WriteLine(ppName);
                 var parser = new ppParser(ppStream, fmt);
                 foreach (ppSubfile sub in parser.Subfiles)
                 {
@@ -50,6 +50,7 @@ namespace GDImport
                             File.WriteAllText(dstDir + bn + "/" + sub.Name, lst.Text);
                             break;
                         case "xx":
+                            Console.WriteLine(sub.Name);
                             var xx = new xxParser(sub.CreateReadStream(), Path.GetFileNameWithoutExtension(sub.Name));
                             wr.AddScene(xx);
                             break;
@@ -57,6 +58,9 @@ namespace GDImport
 //                            Console.WriteLine("Unhandled "+sub.Name);
                             break;
                     }
+                    // stop on skeleton
+                    if (wr.skins != null && wr.skins.Count > 0)
+                        break;
                 }
             }
             wr.Save();

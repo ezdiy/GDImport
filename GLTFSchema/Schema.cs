@@ -121,7 +121,7 @@ namespace GLTFSchema
         public class Skin : GltfNamedNodeBase
         {
             public string name;
-            public string inverseBindMatrices;
+            [DefaultValue(Unset)] public int inverseBindMatrices = Unset;
             [DefaultValue(Unset)] public int skeleton = Unset;
             public List<int> joints;
         }
